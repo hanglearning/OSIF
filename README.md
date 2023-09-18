@@ -1,4 +1,4 @@
-This version of Open Source Impedance Fitter (OSIF) is modified by Hang Chen, Maria Van Venrooy, Lalith Teja Nagidi, Nihaal Chowdary and Emma Cao during the University of Delaware 2023 DSI Hackathon for the Chemours company in Newark, Delaware that supports the following serialization functionalities compared to the orignla OSIF software (https://github.com/NREL/OSIF)
+This version of Open Source Impedance Fitter (OSIF) is modified by Hang Chen, Maria Van Venrooy, Lalith Teja Nagidi, Nihaal Chowdary and Emma Cao during the University of Delaware 2023 DSI Hackathon (https://dsi.udel.edu/events/dsi-symposium-2023/hackathon/) for the Chemours company (https://www.chemours.com/en) in Newark, Delaware that supports the following serialization functionalities compared to the orignla OSIF software (https://github.com/NREL/OSIF)
 
 1. Indicate lower bound, upper bound, and value internval of model parameters of the selected models
 2. Automated evaluation and selection of best fitting parameters and the model based on cost value fitting to the base datafile
