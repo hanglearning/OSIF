@@ -50,7 +50,7 @@ print('#' * len(title_str))
 print(
     "--------------------------\nWritten by Jason Pfeilsticker for the Hydrogen fuel cell manufacturing group\nat the National Renewable Energy Lab (NREL). Feb, 2018\nV2.0 adapted Oct. 2021\nCode for additional model options provided by Timothy Van cleve (NREL)")
 print(
-    "--------------------------\nModified by Hang Chen (chenhanginud@gmail.com) for the The Chemours Company in Newark Delaware during the 2023 Univeristy of Delaware DSI Hackathon.")
+    "--------------------------\nModified by Hang Chen (https://github.com/hanglearning) for the The Chemours Company in Newark Delaware during the 2023 Univeristy of Delaware DSI Hackathon.")
 # print(
 #     '\nthis program uses the matplotlib, scipy, and numpy modules and was written in python.\nIf you publish data from this program, please cite them appropriately.\n'
 #     'To cite this code specifically, please cite the OSIF github page at: https://github.com/NREL/OSIF\n--------------------------\n\n\n')
