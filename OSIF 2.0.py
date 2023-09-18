@@ -5,6 +5,7 @@ import tkinter as Tkinter
 import tkinter.filedialog as tkFileDialog
 import tkinter.messagebox as tkMessageBox
 
+from datetime import datetime
 # end python 3 tkinter import section
 
 
@@ -38,24 +39,28 @@ import webbrowser
 import sys
 
 # output pretty title, version info and citation prompt.
-print('\n\n\n#########################################################################')
-print('python version: ' + sys.version)
-print('Tkinter version: ' + str(Tkinter.TkVersion))
-print('#########################################################################\n\n')
-print('############################################################')
-print('#####     Open Source Impedance Fitter (OSIF) v2.0    #####')
-print('############################################################')
+# print('\n\n\n#########################################################################')
+# print('python version: ' + sys.version)
+# print('Tkinter version: ' + str(Tkinter.TkVersion))
+# print('#########################################################################\n\n')
+title_str = "#####     Open Source Impedance Fitter (OSIF) v2.0 Modified Serialization Version    #####"
+print('#' * len(title_str))
+print(title_str)
+print('#' * len(title_str))
 print(
     "--------------------------\nWritten by Jason Pfeilsticker for the Hydrogen fuel cell manufacturing group\nat the National Renewable Energy Lab (NREL). Feb, 2018\nV2.0 adapted Oct. 2021\nCode for additional model options provided by Timothy Van cleve (NREL)")
 print(
-    '\nthis program uses the matplotlib, scipy, and numpy modules and was written in python.\nIf you publish data from this program, please cite them appropriately.\n'
-    'To cite this code specifically, please cite the OSIF github page at: https://github.com/NREL/OSIF\n--------------------------\n\n\n')
+    "--------------------------\nModified by Hang Chen (chenhanginud@gmail.com) for the The Chemours Company in Newark Delaware during the 2023 Univeristy of Delaware DSI Hackathon.")
+# print(
+#     '\nthis program uses the matplotlib, scipy, and numpy modules and was written in python.\nIf you publish data from this program, please cite them appropriately.\n'
+#     'To cite this code specifically, please cite the OSIF github page at: https://github.com/NREL/OSIF\n--------------------------\n\n\n')
 
 VAR_TO_UNIT = {"Rmem:": "[ohm*cm^2]", "Rcl:": "[ohm*cm^2]", "Qdl:": "[F/(cm^2*sec^phi)]", "Phi:": "[ - ]", "Lwire:": "[H*cm^2]", "Theta:": "[ - ]", "Cell Area:": "[cm^2]", "catalyst loading:": "[mg/cm^2]"}
 VAR_TO_INIT = {'Rmem:': '0.03', 'Rcl:': '0.1', 'Qdl:': '2.5', 'Phi:': '0.95', 'Lwire:': '2E-5', 'Theta:': '0.95', 'Cell Area:': '50', 'catalyst loading:': '0.1'}
 VAR_TO_NAME = {'Rmem:': 'Rmem', 'Rcl:': 'Rcl', 'Qdl:': 'Qdl', 'Phi:': 'Phi', 'Lwire:': 'Lwire', 'Theta:': 'Theta', 'Cell Area:': 'area', 'catalyst loading:': 'loading'}
 
 COST_TO_MODEL = {} # cost_value: [params, eis_model]
+RUN_TIME = None
 
 # Main program class which is called on in line 868-ish to run the program.
 class OSIF:
@@ -181,11 +186,11 @@ class OSIF:
         self.simB = Button(buttonFrame, text="Citation Info.", command=self.openCitationInfo)
         self.simB.grid(row=0, column=2, sticky=W)
 
-        self.fitB = Button(buttonFrame, text="Fit", command=self.serialize_fit)
+        self.fitB = Button(buttonFrame, text="Fit & Serialize", command=self.serialize_fit)
         self.fitB.grid(row=0, column=3, sticky=E)
 
-        self.simB = Button(buttonFrame, text="Simulate", command=self.PerformSim)
-        self.simB.grid(row=0, column=4, sticky=W)
+        # self.simB = Button(buttonFrame, text="Simulate", command=self.PerformSim)
+        # self.simB.grid(row=0, column=4, sticky=W)
 
         # self.simB = Button(OutputFrame, text="Save Model Data", command=self.SaveData)
         # self.simB.grid(row=9, column=sdPerColumn - 2, columnspan=3, sticky=N)
@@ -264,14 +269,17 @@ class OSIF:
             menu.add_command(label=file, command=lambda v=self.currentFileName, l=file: v.set(l))
         print('Selected Data Directory: ' + self.currentDataDir.IE.get())
 
-    def LoadSElectedFile(self):
+    def LoadSElectedFile(self, pass_in_file=""):
         # if nothing is selected, exit this method
-        if (len(self.currentFileName.get()) == 0) | (self.currentFileName.get() is '---'):
+        if not pass_in_file:
+            pass_in_file = self.currentFileName.get()
+
+        if (len(pass_in_file) == 0) | (pass_in_file is '---'):
             print('attempt to load on null selection')
             return
 
-        print(
-            "\n===========================================\n  loading file: " + self.currentFileName.get() + '\n===========================================\n\n')
+        # print(
+        #     "\n===========================================\n  loading file: " + pass_in_file + '\n===========================================\n\n')
         # clear the variables of any previous data
         self.activeData.rawFrequency = []
         self.activeData.rawzPrime = []
@@ -280,17 +288,17 @@ class OSIF:
         self.activeData.rawZExperimentalComplex = []
         self.activeData.rawmodZExperimentalComplex = []
 
-        self.activeData.dataName = self.currentFileName.get()
+        self.activeData.dataName = pass_in_file
 
         if ".xlsx" in self.activeData.dataName:
             self.activeData.dataNameNoExt = self.activeData.dataName[0:len(self.activeData.dataName) - 5]
         else:
             self.activeData.dataNameNoExt = self.activeData.dataName[0:len(self.activeData.dataName) - 4]
         # check for different file formats to parse appropriately.
-        if self.currentFileName.get().endswith('.txt'):
+        if pass_in_file.endswith('.txt'):
 
             self.activeData.dataNameNoExt = self.activeData.dataName[0:len(self.activeData.dataName) - 4]
-            self.currentFile = open(self.currentDataDir.IE.get() + self.currentFileName.get())
+            self.currentFile = open(self.currentDataDir.IE.get() + pass_in_file)
 
             # Run through the lines in the data and parse out the variables into the above lists.
             i = 0  # number of lines in the text file (data and non data)
@@ -309,17 +317,19 @@ class OSIF:
                     print("data loaded in has -Z'' instead of Z''; negating -Z'' column.")
                     negateImZ = -1
             k = 0
+            
             while dataLineString:
 
                 # For debuging file input regular expressions.
 
                 regExTest = re.match('^\d*.\d*\t\d*.\d*\t\d*.\d*', dataLineString)
-                if regExTest is not None:
-                    print(
-                        '----------------------------------------------------------------------------------------------------------DATA LINE BELOW')
-                if regExTest is None:
-                    print(
-                        '----------------------------------------------------------------------------------------------------------NOT DATA LINE BELOW\n' + dataLineString)
+                # skip verbose print
+                # if regExTest is not None:
+                #     print(
+                #         '----------------------------------------------------------------------------------------------------------DATA LINE BELOW')
+                # if regExTest is None:
+                #     print(
+                #         '----------------------------------------------------------------------------------------------------------NOT DATA LINE BELOW\n' + dataLineString)
 
                 if (len(dataLineString) > 2) & (dataLineString[0] != '#') & (
                         re.match('^\d*.\d*\t\d*.\d*\t\d*.\d*', dataLineString) is not None) & (dataLineString != ""):
@@ -334,9 +344,11 @@ class OSIF:
                     self.activeData.rawZdoublePrime.append(negateImZ * float(lineList[zDoublePrimeCol]))
                     self.activeData.rawzMod.append(float(lineList[zModCol]))
                     if k == 0:
-                        print('\n\tFrequency,\t\tRe(Z),\t\t\tIm(Z),\t\t\t\t|Z|')
+                        # skip verbose print
+                        # print('\n\tFrequency,\t\tRe(Z),\t\t\tIm(Z),\t\t\t\t|Z|')
                         k = 1
-                    print(lineList[freqCol], lineList[zPrimeCol], lineList[zDoublePrimeCol], lineList[zModCol])
+                    # skip verbose print
+                    # print(lineList[freqCol], lineList[zPrimeCol], lineList[zDoublePrimeCol], lineList[zModCol])
                 dataLineString = self.currentFile.readline()
             self.currentFile.close()
             i = 0
@@ -350,7 +362,7 @@ class OSIF:
 
 
         # Load in default excel spread sheet output format from EIS software
-        elif self.currentFileName.get().endswith('.xlsx') | self.currentFileName.get().endswith('.xls'):
+        elif pass_in_file.endswith('.xlsx') | pass_in_file.endswith('.xls'):
 
             def checkForNegativeImZReturnImZ(dataRowCol):
                 numRows = sheet1.col(0).__len__()
@@ -393,7 +405,7 @@ class OSIF:
                     i += 1
                 return returnCol
 
-            xlsx = xlrd.open_workbook(self.currentDataDir.IE.get() + self.currentFileName.get())
+            xlsx = xlrd.open_workbook(self.currentDataDir.IE.get() + pass_in_file)
             sheet1 = xlsx.sheet_by_index(0)
             data = sheetToListRowCol(sheet1)
             xlsx.release_resources()
@@ -443,41 +455,44 @@ class OSIF:
         self.activeData.modZExperimentalComplex = self.activeData.rawmodZExperimentalComplex[minIndex:maxIndex + 1]
         self.activeData.phase = self.activeData.rawPhase[minIndex:maxIndex + 1]
 
-    def PerformSim(self):
-        self.LoadSElectedFile()
-        if len(self.activeData.rawzPrime) == 0:
-            tkMessageBox.showinfo("Error!", "No data file loaded\nor data is in incorrect format")
-            return
+    # function removed
+    # def PerformSim(self):
+    #     self.LoadSElectedFile()
+    #     if len(self.activeData.rawzPrime) == 0:
+    #         tkMessageBox.showinfo("Error!", "No data file loaded\nor data is in incorrect format")
+    #         return
 
-        else:
-            self.ChopFreq()
-            ###### /float(self.area.IE.get())      Rmem
-            params = [float(self.Lwire.IE.get()) / float(self.area.IE.get()),
-                      float(self.Rmem.IE.get()) / float(self.area.IE.get()),
-                      float(self.Rcl.IE.get()) / float(self.area.IE.get()),
-                      float(self.Qdl.IE.get()),
-                      float(self.Phi.IE.get()),
-                      float(self.Theta.IE.get())]
+    #     else:
+    #         self.ChopFreq()
+    #         ###### /float(self.area.IE.get())      Rmem
+    #         params = [float(self.Lwire.IE.get()) / float(self.area.IE.get()),
+    #                   float(self.Rmem.IE.get()) / float(self.area.IE.get()),
+    #                   float(self.Rcl.IE.get()) / float(self.area.IE.get()),
+    #                   float(self.Qdl.IE.get()),
+    #                   float(self.Phi.IE.get()),
+    #                   float(self.Theta.IE.get())]
 
-            self.CreateFigures(params, 'sim')
+    #         self.CreateFigures(params, 'sim')
 
-            print("Model Selection Made:", self.model_selection.get())
-            simResiduals = self.funcCost(params)
-            # print simResiduals.get()
-            self.resPercentData = np.sum(simResiduals / self.activeData.zMod * 100) / len(simResiduals)
-            self.avgResPer.AVGRESPER.config(state='normal')
-            self.avgResPer.AVGRESPER.delete(0, END)
-            self.avgResPer.AVGRESPER.insert(0, '%5.4f' % self.resPercentData)
-            self.avgResPer.AVGRESPER.config(state='readonly')
+    #         print("Model Selection Made:", self.model_selection.get())
+    #         simResiduals = self.funcCost(params)
+    #         # print simResiduals.get()
+    #         self.resPercentData = np.sum(simResiduals / self.activeData.zMod * 100) / len(simResiduals)
+    #         self.avgResPer.AVGRESPER.config(state='normal')
+    #         self.avgResPer.AVGRESPER.delete(0, END)
+    #         self.avgResPer.AVGRESPER.insert(0, '%5.4f' % self.resPercentData)
+    #         self.avgResPer.AVGRESPER.config(state='readonly')
 
     
     def serialize_fit(self):
-
+        global RUN_TIME
+        RUN_TIME = datetime.now().strftime("%m%d%Y_%H%M%S")
         # for each variable, get lower, inc and upper bound
 
         var_to_vals = {}
         fit_count = []
 
+        run_combs = ""
         for var_name in VAR_TO_NAME.values():
             
             the_var = vars(self)[var_name]
@@ -487,26 +502,51 @@ class OSIF:
             if incre == 0:
                 var_to_vals[var_name] = [lower_bound]
             else:
-                var_to_vals[var_name] = list(np.arange(start=lower_bound, stop=upperbound, step=incre))
+                var_to_vals[var_name] = list(np.round(np.arange(start=lower_bound, stop=upperbound + np.finfo(np.float64).eps * 2, step=incre), 10))
             
+            run_combs += f"\n{var_name}: {', '.join([str(i) for i in var_to_vals[var_name]])}"
             fit_count.append(len(var_to_vals[var_name]))
 
         eis_model_count = 0
         for i, m in enumerate(self.eis_model):    
             if vars(self)[f'model_button_{i}'].get():
                 eis_model_count += 1
+                run_combs += f"\non {m}"
         fit_count.append(eis_model_count)
         
         total_fits = np.product(fit_count)
-        if tkMessageBox.askokcancel("Confirm", f"Run {' * '.join([str(c) for c in fit_count])} = {total_fits} fits on {self.currentFileName.get()}?\n If OK, look at terminal output for progress."):
+
+        # if base data file not selected
+        if not self.currentFileName.get() or self.currentFileName.get() == "Data Directory not selected":
+            if tkMessageBox.askokcancel("Confirm", "Please select a base data file to continue."):
+                return
+        
+        while total_fits == 0:
+            if tkMessageBox.askokcancel("Confirm", "Please select at least one Circuit Model to continue."):
+                return
+            
+        if tkMessageBox.askokcancel("Confirm", f"Confirm the following run combinations:\n {run_combs}\n\n Run total {total_fits} fits on {self.currentFileName.get()} and serialize?\n If OK, look at terminal output for progress."):
             # iterate over all possible combinations of var values
-
-            for i, values in enumerate(list(itertools.product(*var_to_vals.values()))):
-                print(f"Now fitting {i + 1}/{total_fits}, {values}")
+            for _, values in enumerate(list(itertools.product(*var_to_vals.values()))):
                 self.PerformFit(values)
-        else:
-            pass
 
+        # get the Prameters and Curcuit model that produces the minimum cost
+        min_cost = min(COST_TO_MODEL, key=lambda k: int(k))
+        min_params, min_model = COST_TO_MODEL[min_cost]
+
+        print(f"The minimum cost value {min_cost} corresponds to params {min_params} with Circuit Model {min_model}. Applying to the rest of the data files.")
+
+        # get all other files under the selected directory
+        file_names = [f for f in os.listdir(self.currentDataDir.IE.get()) if os.path.isfile(self.currentDataDir.IE.get()+'/'+f) and not f.startswith('.')]
+        # remove the base file
+        file_names.remove(self.currentFileName.get())
+        
+        # fit to other data files
+        for other_file in file_names:
+            print(f"\nFitting minimum cost model to {other_file}")
+            self.PerformFit(min_params, other_file, True, min_model)
+
+        print("Serialization Done.")
         return
 
         # float(self.Lwire.IE.get()) / float(self.area.IE.get()),
@@ -518,11 +558,14 @@ class OSIF:
 
 
 
-    def PerformFit(self, values):
+    def PerformFit(self, values, pass_in_file="", serialization=False, model=None):
 
         Rmem, Rcl, Qdl, Phi, Lwire, Theta, area, loading = values
-        self.LoadSElectedFile()
-        print('\n\n\n\n' + 'Sample: ' + self.currentFileName.get() + '\n')
+        self.LoadSElectedFile(pass_in_file)
+        if not pass_in_file:
+            pass_in_file = self.currentFileName.get()
+        
+        print('\n\n\n\n' + 'Sample: ' + pass_in_file + '\n')
         if len(self.activeData.rawzPrime) == 0:
             tkMessageBox.showinfo("Error!", "No data file loaded\nor data is in incorrect format")
             return
@@ -541,12 +584,20 @@ class OSIF:
             # iterate over each circuit model and fit if selected
             model_to_identifier = {0: "", 1: "_l", 2: "_s"}
             for i, m in enumerate(self.eis_model):
+                if not vars(self)[f'model_button_{i}'].get():
+                    # if model not selected, skip
+                    continue
+                if serialization and m != model:
+                    # if serialization model and m is not the model selected based on cost, skip
+                    continue
+                
+
+                # if (not serialization and vars(self)[f'model_button_{i}'].get()) or ():
                 print(f"Now fitting {values} to {m}")
-                if vars(self)[f'model_button_{i}'].get():
-                    finalOutput = scipy.optimize.least_squares(getattr(self, f"funcCost{model_to_identifier[i]}"), params,
-                                                       bounds=[(0, 0, 0, 0, 0, 0), (1, np.inf, np.inf, np.inf, 1, 1)],
-                                                       max_nfev=50000, method='trf', xtol=1e-11,
-                                                       ftol=1e-11, gtol=1e-11, verbose=1)
+                finalOutput = scipy.optimize.least_squares(getattr(self, f"funcCost{model_to_identifier[i]}"), params,
+                                                    bounds=[(0, 0, 0, 0, 0, 0), (1, np.inf, np.inf, np.inf, 1, 1)],
+                                                    max_nfev=50000, method='trf', xtol=1e-11,
+                                                    ftol=1e-11, gtol=1e-11, verbose=1)
                 self.finalParams = finalOutput.x
 
                 # Estimate variance of parameters based on Gauss-Newton approximation of the Hessian of the cost function. See: (https://www8.cs.umu.se/kurser/5DA001/HT07/lectures/lsq-handouts.pdf)
@@ -579,7 +630,7 @@ class OSIF:
 
                 self.resPercentData = np.sum(finalOutput.fun / self.activeData.zMod * 100) / finalOutput.fun.shape[0]
 
-                print('\nFit to: ' + self.activeData.dataNameNoExt)
+                # print('\nFit to: ' + self.activeData.dataNameNoExt)
 
                 self.percentSigma = self.standardDeviation / self.finalParams * 100
 
@@ -599,7 +650,7 @@ class OSIF:
                                                     float(self.area.IE.get()) * float(self.loading.IE.get())),
                                         float(self.L2NormOfRes) * float(self.area.IE.get()))
 
-                print(self.fitOutPutString)
+                # print(self.fitOutPutString)
 
                 self.realFinalModel = getattr(self, f"funcreal{model_to_identifier[i]}")(self.finalParams)
                 self.imagFinalModel = getattr(self, f"funcImg{model_to_identifier[i]}")(self.finalParams)
@@ -627,9 +678,12 @@ class OSIF:
                         self.activeData.ZdoublePrime)) * 100) / \
                                     self.imagFinalModel.shape[0]
 
-                self.CreateFigures(self.finalParams, 'fit', model_to_identifier[i], m, values)
-        print(COST_TO_MODEL)
-    def CreateFigures(self, params, fitOrSim, model_identifier, eis_model_name, orig_params):
+                self.CreateFigures(self.finalParams, 'fit', model_to_identifier[i], m, values, serialization, pass_in_file, m)
+        
+        
+        # print(COST_TO_MODEL)
+
+    def CreateFigures(self, params, fitOrSim, model_identifier, eis_model_name, orig_params, serialization, pass_in_file, m):
         if fitOrSim == 'fit':
             graphLabel = 'Full complex fit: '
         elif fitOrSim == 'sim':
@@ -746,19 +800,23 @@ class OSIF:
 
         # save plot
         import secrets
-        plot_id = secrets.token_hex(3)
         Rmem, Rcl, Qdl, Phi, Lwire, Theta, area, loading = orig_params
-        plt_dir = f"{self.currentDataDir.IE.get()}plots/{eis_model_name}"
+        plt_dir = f"{self.currentDataDir.IE.get()}plots/{RUN_TIME}"
+        if serialization:
+            plt_dir = f"{plt_dir}/serialized/{eis_model_name}"
+        else:
+            plt_dir = f"{plt_dir}/initial_fit/{eis_model_name}"
         os.makedirs(plt_dir, exist_ok=True)
-        with open(f"{plt_dir}/plot_details.txt", "w+") as f:
-            f.write(f"{plot_id}\n")
+        with open(f"{plt_dir}/plot_details_{pass_in_file}.txt", "w+") as f:
+            f.write(f"{pass_in_file}\n")
+            f.write(f"{m}\n")
             f.write(f"Original params - Rmem: {Rmem}, Rcl: {Rcl}, Qdl: {Qdl}, Phi: {Phi}, Lwire: {Lwire}, Theta: {Theta}, area: {area}, loading: {loading}\n")
             f.write(f"Transformed params {params}\n")
             # calculate cost function
             cost = sum(getattr(self, f"funcCost{model_identifier}")(params))
             COST_TO_MODEL[cost] = [orig_params, eis_model_name]
             f.write(f"Cost value {params}: {cost}\n")
-        plt.savefig(f'{plt_dir}/{plot_id}.png')
+        plt.savefig(f'{plt_dir}/{pass_in_file}.png')
                     
         print('done with plotting')
 
